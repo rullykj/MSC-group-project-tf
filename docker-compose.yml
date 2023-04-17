@@ -1,0 +1,10 @@
+version: "3.0"
+
+services:
+
+  app:
+    build: .
+    image: age_gender_prediction_tensorflow
+    ports:
+      - "8001:8000"
+    restart: always
