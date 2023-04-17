@@ -1,11 +1,7 @@
-import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
 from sanic import Sanic
 from sanic.response import text
 from sanic.response import json
 
-import tensorflow as tf
 import numpy as np
 import cv2
 import face_recognition
@@ -19,9 +15,13 @@ import extcolors
 from colormap import rgb2hex
 from typing import List
 
+import tensorflow as tf
+
 app = Sanic("MyAgeGenderPredictionApp")
+
 print("load model!!!")
-MyModel = tf.keras.models.load_model('../../Core/face_weights.05-val_loss-0.90-val_age_loss-0.74-val_gender_loss-0.16.utk.h5')
+tf_model_path = 'face_weights.05-val_loss-0.90-val_age_loss-0.74-val_gender_loss-0.16.utk.h5'
+MyModel = tf.keras.models.load_model(tf_model_path)
 
 gender_labels = ['Male', 'Female']
 age_labels = ['1-2','3-9','10-20','21-27','28-45','46-65','66-116']
@@ -129,8 +129,10 @@ def preprocess_input_resnet50(x):
     
     return x_temp
 
-def predict_api(myImage):
-    demo_image = cv2.imread(myImage)
+def predict_api(myImageBytes):
+
+    image_np = np.frombuffer(myImageBytes, np.uint8)
+    demo_image = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
 
     color_coverted = cv2.cvtColor(demo_image, cv2.COLOR_BGR2RGB)
 
@@ -175,23 +177,9 @@ async def predict(request):
 
 @app.route("/files", methods=["POST"])
 def post_json(request):
-    # print(request.files)
     test_file = request.files.get('test')
 
-    # print(test_file.name)
-    
-    file_parameters = {
-        'body': test_file.body,
-        'name': test_file.name,
-        'type': test_file.type,
-    }
-
-    file_path = f"{file_parameters['name']}"
-    with open(file_path, 'wb') as f:
-        f.write(file_parameters['body'])
-    f.close()
-
-    preds, json_colors = predict_api(file_parameters['name'])
+    preds, json_colors = predict_api(test_file.body)
     # print(preds)
     preds_ages = preds[0][0]
     preds_genders = preds[1][0]
@@ -222,3 +210,7 @@ def post_json(request):
     # myJson = js.dumps(tl, cls=MyEncoder)
     # json_object = js.loads(myJson)
     # return json(json_object)
+
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8000)
