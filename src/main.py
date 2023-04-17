@@ -1,6 +1,7 @@
 from sanic import Sanic
 from sanic.response import text
 from sanic.response import json
+from sanic_ext import Extend
 
 import numpy as np
 import cv2
@@ -18,6 +19,8 @@ from typing import List
 import tensorflow as tf
 
 app = Sanic("MyAgeGenderPredictionApp")
+app.config.CORS_ORIGINS = "*"
+Extend(app)
 
 print("load model!!!")
 tf_model_path = 'face_weights.05-val_loss-0.90-val_age_loss-0.74-val_gender_loss-0.16.utk.h5'
